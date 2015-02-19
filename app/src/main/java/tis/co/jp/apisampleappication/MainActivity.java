@@ -35,7 +35,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends Activity implements LocationListener {
 
-    LocationManager locationManager;
+    private LocationManager locationManager;
     private AsyncTask<Uri,  Void, String> mTask;
     private int numOfHotels;
     private ArrayList<String> hotelName = new ArrayList<String>();
@@ -45,7 +45,7 @@ public class MainActivity extends Activity implements LocationListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.hotel_list);
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
     }
@@ -70,13 +70,7 @@ public class MainActivity extends Activity implements LocationListener {
         // 【重要】緯度経度が1度でも取得できた時点で処理を終了
         locationManager.removeUpdates(this);
 
-        // 取得した緯度経度を使って処理を行う（処理の詳細は省略）
-
-        TextView tv_lat = (TextView)findViewById(R.id.latitude);
-        TextView tv_lng = (TextView)findViewById(R.id.longitude);
-
-        tv_lat.setText(latitude);
-        tv_lng.setText(longitude);
+        // 取得した緯度経度を使って処理を行う
 
         getNearHotelsInfo(latitude,longitude);
 
@@ -160,13 +154,13 @@ public class MainActivity extends Activity implements LocationListener {
                         Log.d("info", "Connection");
                     } catch (RuntimeException e) {
                         mError = e;
-                        Log.e("info", "通信失敗", e);
+                        Log.e("error", "通信失敗", e);
                     } catch (ClientProtocolException e) {
                         mError = e;
-                        Log.e("info", "通信失敗", e);
+                        Log.e("error", "通信失敗", e);
                     } catch (IOException e) {
                         mError = e;
-                        Log.e("info", "通信失敗", e);
+                        Log.e("error", "通信失敗", e);
                     } finally {
                         // リソースを開放する
                         httpClient.getConnectionManager().shutdown();
@@ -217,6 +211,8 @@ public class MainActivity extends Activity implements LocationListener {
 
             JSONArray jsHotels = jsRoot.getJSONArray("hotels");
 
+
+            //30件(１ページ)毎にjsonのhotelsが区切られているので３０件でストップしておく
             for (int i = 0; i < numOfHotels && i < 30; i++) {
 
                 JSONObject hotelObject =jsHotels.getJSONObject(i);
@@ -227,11 +223,8 @@ public class MainActivity extends Activity implements LocationListener {
                 JSONObject basicInfoObject = hotelInfoObject.getJSONObject("hotelBasicInfo");
 
                 hotelName.add(basicInfoObject.getString("hotelName"));
-                System.out.println(hotelName.get(i));
                 hotelAccess.add(basicInfoObject.getString("access"));
-                System.out.println(hotelAccess.get(i));
                 hotelUrl.add(basicInfoObject.getString("hotelInformationUrl"));
-                System.out.println(hotelUrl.get(i));
 
             }
 
@@ -243,9 +236,11 @@ public class MainActivity extends Activity implements LocationListener {
         }
     }
 
-    private void setListView(){
 
-        setContentView(R.layout.hotel_list);
+    /*
+    取得したホテル名をListViewにセット
+    */
+    private void setListView(){
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_expandable_list_item_1,hotelName);
         ListView listView = (ListView)findViewById(R.id.HotelList);
         listView.setAdapter(adapter);
@@ -255,7 +250,6 @@ public class MainActivity extends Activity implements LocationListener {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Adapterからタップした位置のデータを取得する
-                System.out.println(position);
                 Uri hotelUri = Uri.parse(hotelUrl.get(position));
                 Intent intent = new Intent(Intent.ACTION_VIEW, hotelUri);
                 startActivity(intent);
